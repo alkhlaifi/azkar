@@ -53,6 +53,9 @@ h1{font-family:Ruqaa;font-weight:700;text-align:center;font-size:44px;line-heigh
 .chip{border:1px solid rgba(232,201,131,.45);color:#f0dfb5;border-radius:30px;padding:7px 14px;font-size:13px}
 .chip.gold{background:linear-gradient(180deg,#f0d593,#c99a45);color:#1b2a22;border:0;font-weight:700}
 .dedic{margin-top:auto;padding-top:22px;text-align:center}
+.users{margin:18px auto 0;display:flex;align-items:center;gap:8px;background:rgba(232,201,131,.12);border:1px solid rgba(232,201,131,.35);color:#f3e2b4;border-radius:30px;padding:7px 16px;font-size:14px;width:fit-content}
+.users b{color:#ffe7a8;font-size:16px}
+.users .dot{width:8px;height:8px;border-radius:50%;background:#7fd49a;box-shadow:0 0 0 3px rgba(127,212,154,.25)}
 .dedic .r{width:120px;height:2px;margin:0 auto 12px;background:linear-gradient(90deg,transparent,#e8c983,transparent)}
 .dedic .by{font-weight:700;font-size:15px;color:#f3e2b4}
 .dedic .sd{font-size:13px;color:#e8c983;margin-top:3px}
@@ -150,6 +153,7 @@ body.e .pick button.on{color:#14233a}
   <button class="chip" id="aboutBtn">ℹ عن الأذكار</button>
   <button class="chip" id="fsBtn">حجم الخط</button>
  </div>
+ <div class="users" id="users" hidden><span class="dot"></span><span id="usersT"></span></div>
  <div class="dedic"><div class="r"></div><div class="by">إعداد أ/ محمد بن سعود الخليفي</div><div class="sd">صدقة جارية عنه، ووالديه، وأهل بيته</div></div>
 </div>
 </section>
@@ -329,11 +333,34 @@ $('#installBtn').onclick = async () => {
   if (deferred){ deferred.prompt(); const r = await deferred.userChoice; deferred = null; if (r.outcome === 'accepted') $('#installBtn').hidden = true; }
   else $('#installSheet').classList.add('on');
 };
-window.addEventListener('appinstalled', () => { $('#installBtn').hidden = true; toast('تم تثبيت التطبيق'); });
+window.addEventListener('appinstalled', () => { $('#installBtn').hidden = true; toast('تم تثبيت التطبيق'); gcEvent('install', 'تثبيت التطبيق'); });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js');
+
+// --- usage statistics (GoatCounter: no cookies, no personal data)
+const GC = 'https://azkar-alkhaifi.goatcounter.com';
+function gcEvent(path, title){
+  const send = () => window.goatcounter.count({path, title, event: true});
+  if (window.goatcounter && window.goatcounter.count) send(); else window.addEventListener('load', () => setTimeout(() => window.goatcounter && window.goatcounter.count && send(), 800));
+}
+if (standalone) gcEvent('app-open', 'فتح من أيقونة التطبيق');
+function people(n){
+  if (n === 1) return 'شخص واحد';
+  if (n === 2) return 'شخصان';
+  const t = ar(n.toLocaleString('en-US')).replace(/,/g, '٬');
+  const m = n % 100;
+  return t + ((m >= 3 && m <= 10) ? ' أشخاص' : (m <= 2 ? ' شخص' : ' شخصًا'));
+}
+function showUsers(n){ if (!n) return; $('#usersT').innerHTML = 'استفاد من التطبيق <b>' + people(n) + '</b>'; $('#users').hidden = false; }
+showUsers(store.get('azkar-users', 0));
+fetch(GC + '/counter/TOTAL.json', {cache: 'no-store'}).then(r => r.ok ? r.json() : null).then(j => {
+  if (!j || j.count === undefined) return;
+  const n = parseInt(String(j.count).replace(/[^0-9]/g, ''), 10);
+  if (n > 0){ store.set('azkar-users', n); showUsers(n); }
+}).catch(() => {});
 
 setFs(store.get('azkar-fs', 1));
 home();
 </script>
+<script data-goatcounter="https://azkar-alkhaifi.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
