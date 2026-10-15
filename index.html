@@ -353,7 +353,10 @@ function people(n){
 }
 function showUsers(n){ if (!n) return; $('#usersT').innerHTML = 'استفاد من التطبيق <b>' + people(n) + '</b>'; $('#users').hidden = false; }
 showUsers(store.get('azkar-users', 0));
-fetch(GC + '/counter/TOTAL.json', {cache: 'no-store'}).then(r => r.ok ? r.json() : null).then(j => {
+// count visitors of the app page only (events such as app-open are not added)
+const pagePath = location.pathname.replace(/\/(index\.html)?$/, '') || '/';
+const getCount = path => fetch(GC + '/counter/' + encodeURIComponent(path) + '.json', {cache: 'no-store'}).then(r => r.ok ? r.json() : null);
+getCount(pagePath).then(j => j || getCount(pagePath + '/')).then(j => {
   if (!j || j.count === undefined) return;
   const n = parseInt(String(j.count).replace(/[^0-9]/g, ''), 10);
   if (n > 0){ store.set('azkar-users', n); showUsers(n); }
