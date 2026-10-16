@@ -53,7 +53,7 @@ h1{font-family:Ruqaa;font-weight:700;text-align:center;font-size:44px;line-heigh
 .chip{border:1px solid rgba(232,201,131,.45);color:#f0dfb5;border-radius:30px;padding:7px 14px;font-size:13px}
 .chip.gold{background:linear-gradient(180deg,#f0d593,#c99a45);color:#1b2a22;border:0;font-weight:700}
 .dedic{margin-top:auto;padding-top:22px;text-align:center}
-.stats{display:flex;gap:12px;justify-content:center;margin:20px auto 0;width:100%;max-width:360px}
+.stats{display:flex;gap:12px;justify-content:center;margin:20px auto 0;width:100%;max-width:220px}
 .stats[hidden],.stat[hidden]{display:none}
 .stat{flex:1;background:rgba(232,201,131,.10);border:1px solid rgba(232,201,131,.35);border-radius:18px;padding:10px 8px;text-align:center;color:#f3e2b4}
 .stat .ic{font-size:18px;line-height:1}
@@ -158,7 +158,6 @@ body.e .pick button.on{color:#14233a}
  </div>
  <div class="stats" id="stats" hidden>
   <div class="stat" id="stV" hidden><div class="ic">👥</div><div class="n" id="nV"></div><div class="lb">عدد الزيارات</div></div>
-  <div class="stat" id="stI" hidden><div class="ic">📲</div><div class="n" id="nI"></div><div class="lb">ثبّتوا التطبيق</div></div>
  </div>
  <div class="dedic"><div class="r"></div><div class="by">إعداد أ/ محمد بن سعود الخليفي</div><div class="sd">صدقة جارية عنه، ووالديه، وأهل بيته</div></div>
 </div>
@@ -366,20 +365,13 @@ function showStat(id, n){
   $('#n' + id).textContent = fmt(n); $('#st' + id).hidden = false; $('#stats').hidden = false;
 }
 const cached = store.get('azkar-stats', {});
-showStat('V', cached.V); showStat('I', cached.I);
-// GoatCounter caches counter answers for up to 4 hours; asking with a 10-minute time stamp gets a fresh number,
-// and if that request is refused we fall back to the plain (cached) address
-const parseCount = r => r && r.ok ? r.json().then(j => j && j.count !== undefined ? parseInt(String(j.count).replace(/[^0-9]/g, ''), 10) : 0) : 0;
-const getCount = path => {
-  const url = GC + '/counter/' + encodeURIComponent(path) + '.json';
-  const bucket = Math.floor(Date.now() / 600000);
-  return fetch(url + '?t=' + bucket, {cache: 'no-store'}).then(parseCount).catch(() => 0)
-    .then(n => n || fetch(url, {cache: 'no-store'}).then(parseCount).catch(() => 0));
-};
-Promise.all([getCount(PV).then(n => n || getCount(PV + '/')), getCount(PI)]).then(([v, i]) => {
-  v = Math.max(v, i);
-  const c = {V: v || cached.V || 0, I: i || cached.I || 0};
-  store.set('azkar-stats', c); showStat('V', c.V); showStat('I', c.I);
+showStat('V', cached.V);
+// GoatCounter refreshes the public count every few hours; the dashboard is always live
+const getCount = path => fetch(GC + '/counter/' + encodeURIComponent(path) + '.json', {cache: 'no-store'})
+  .then(r => r.ok ? r.json() : null).then(j => j && j.count !== undefined ? parseInt(String(j.count).replace(/[^0-9]/g, ''), 10) : 0).catch(() => 0);
+getCount(PV).then(n => n || getCount(PV + '/')).then(v => {
+  const c = {V: Math.max(v, cached.V || 0)};
+  store.set('azkar-stats', c); showStat('V', c.V);
 });
 
 setFs(store.get('azkar-fs', 1));
