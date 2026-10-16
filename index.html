@@ -53,10 +53,12 @@ h1{font-family:Ruqaa;font-weight:700;text-align:center;font-size:44px;line-heigh
 .chip{border:1px solid rgba(232,201,131,.45);color:#f0dfb5;border-radius:30px;padding:7px 14px;font-size:13px}
 .chip.gold{background:linear-gradient(180deg,#f0d593,#c99a45);color:#1b2a22;border:0;font-weight:700}
 .dedic{margin-top:auto;padding-top:22px;text-align:center}
-.users{margin:18px auto 0;display:flex;align-items:center;gap:8px;background:rgba(232,201,131,.12);border:1px solid rgba(232,201,131,.35);color:#f3e2b4;border-radius:30px;padding:7px 16px;font-size:14px;width:fit-content}
-.users[hidden]{display:none}
-.users b{color:#ffe7a8;font-size:16px}
-.users .dot{width:8px;height:8px;border-radius:50%;background:#7fd49a;box-shadow:0 0 0 3px rgba(127,212,154,.25)}
+.stats{display:flex;gap:12px;justify-content:center;margin:20px auto 0;width:100%;max-width:360px}
+.stats[hidden],.stat[hidden]{display:none}
+.stat{flex:1;background:rgba(232,201,131,.10);border:1px solid rgba(232,201,131,.35);border-radius:18px;padding:10px 8px;text-align:center;color:#f3e2b4}
+.stat .ic{font-size:18px;line-height:1}
+.stat .n{font-size:26px;font-weight:700;color:#ffe7a8;line-height:1.3}
+.stat .lb{font-size:12.5px;opacity:.9}
 .dedic .r{width:120px;height:2px;margin:0 auto 12px;background:linear-gradient(90deg,transparent,#e8c983,transparent)}
 .dedic .by{font-weight:700;font-size:15px;color:#f3e2b4}
 .dedic .sd{font-size:13px;color:#e8c983;margin-top:3px}
@@ -154,7 +156,10 @@ body.e .pick button.on{color:#14233a}
   <button class="chip" id="aboutBtn">ℹ عن الأذكار</button>
   <button class="chip" id="fsBtn">حجم الخط</button>
  </div>
- <div class="users" id="users" hidden><span class="dot"></span><span id="usersT"></span></div>
+ <div class="stats" id="stats" hidden>
+  <div class="stat" id="stV" hidden><div class="ic">👥</div><div class="n" id="nV"></div><div class="lb">عدد الزيارات</div></div>
+  <div class="stat" id="stI" hidden><div class="ic">📲</div><div class="n" id="nI"></div><div class="lb">ثبّتوا التطبيق</div></div>
+ </div>
  <div class="dedic"><div class="r"></div><div class="by">إعداد أ/ محمد بن سعود الخليفي</div><div class="sd">صدقة جارية عنه، ووالديه، وأهل بيته</div></div>
 </div>
 </section>
@@ -344,23 +349,31 @@ function gcEvent(path, title){
   if (window.goatcounter && window.goatcounter.count) send(); else window.addEventListener('load', () => setTimeout(() => window.goatcounter && window.goatcounter.count && send(), 800));
 }
 if (standalone) gcEvent('app-open', 'فتح من أيقونة التطبيق');
-function people(n){
-  if (n === 1) return 'شخص واحد';
-  if (n === 2) return 'شخصان';
-  const t = ar(n.toLocaleString('en-US')).replace(/,/g, '٬');
-  const m = n % 100;
-  return t + ((m >= 3 && m <= 10) ? ' أشخاص' : (m <= 2 ? ' شخص' : ' شخصًا'));
+// visits: every opening of the app is a page view of the app page (GoatCounter "Sessions" setting is off, so repeats count too)
+// installs: each device is counted once, on its first launch from the home-screen icon
+const PI = '/azkar-stats/install';
+const PV = location.pathname.replace(/\/(index\.html)?$/, '') || '/';
+function countOnce(flag, path, title){
+  if (store.get(flag, 0)) return;
+  const send = () => { window.goatcounter.count({path, title}); store.set(flag, 1); };
+  if (window.goatcounter && window.goatcounter.count) send();
+  else window.addEventListener('load', () => setTimeout(() => window.goatcounter && window.goatcounter.count && send(), 800));
 }
-function showUsers(n){ if (!n) return; $('#usersT').innerHTML = 'استفاد من التطبيق <b>' + people(n) + '</b>'; $('#users').hidden = false; }
-showUsers(store.get('azkar-users', 0));
-// count visitors of the app page only (events such as app-open are not added)
-const pagePath = location.pathname.replace(/\/(index\.html)?$/, '') || '/';
-const getCount = path => fetch(GC + '/counter/' + encodeURIComponent(path) + '.json', {cache: 'no-store'}).then(r => r.ok ? r.json() : null);
-getCount(pagePath).then(j => j || getCount(pagePath + '/')).then(j => {
-  if (!j || j.count === undefined) return;
-  const n = parseInt(String(j.count).replace(/[^0-9]/g, ''), 10);
-  if (n > 0){ store.set('azkar-users', n); showUsers(n); }
-}).catch(() => {});
+if (standalone) countOnce('azkar-gc-install', PI, 'تثبيت جديد');
+const fmt = n => ar(n.toLocaleString('en-US')).replace(/,/g, '٬');
+function showStat(id, n){
+  if (!(n > 0)) return;
+  $('#n' + id).textContent = fmt(n); $('#st' + id).hidden = false; $('#stats').hidden = false;
+}
+const cached = store.get('azkar-stats', {});
+showStat('V', cached.V); showStat('I', cached.I);
+const getCount = path => fetch(GC + '/counter/' + encodeURIComponent(path) + '.json', {cache: 'no-store'})
+  .then(r => r.ok ? r.json() : null).then(j => j && j.count !== undefined ? parseInt(String(j.count).replace(/[^0-9]/g, ''), 10) : 0).catch(() => 0);
+Promise.all([getCount(PV).then(n => n || getCount(PV + '/')), getCount(PI)]).then(([v, i]) => {
+  v = Math.max(v, i);
+  const c = {V: v || cached.V || 0, I: i || cached.I || 0};
+  store.set('azkar-stats', c); showStat('V', c.V); showStat('I', c.I);
+});
 
 setFs(store.get('azkar-fs', 1));
 home();
