@@ -366,8 +366,9 @@ function showStat(id, n){
 }
 const cached = store.get('azkar-stats', {});
 showStat('V', cached.V);
-// GoatCounter refreshes the public count every few hours; the dashboard is always live
-const getCount = path => fetch(GC + '/counter/' + encodeURIComponent(path) + '.json', {cache: 'no-store'})
+// the plain counter address is served from a cache that can be many hours old;
+// asking with a start date (before the app existed) returns the live total
+const getCount = path => fetch(GC + '/counter/' + encodeURIComponent(path) + '.json?start=2026-01-01', {cache: 'no-store'})
   .then(r => r.ok ? r.json() : null).then(j => j && j.count !== undefined ? parseInt(String(j.count).replace(/[^0-9]/g, ''), 10) : 0).catch(() => 0);
 getCount(PV).then(n => n || getCount(PV + '/')).then(v => {
   const c = {V: Math.max(v, cached.V || 0)};
