@@ -339,7 +339,7 @@ $('#installBtn').onclick = async () => {
   else $('#installSheet').classList.add('on');
 };
 window.addEventListener('appinstalled', () => { $('#installBtn').hidden = true; toast('تم تثبيت التطبيق'); gcEvent('install', 'تثبيت التطبيق'); });
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js');
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).then(r => r.update()).catch(() => {});
 
 // --- usage statistics (GoatCounter: no cookies, no personal data)
 const GC = 'https://azkar-alkhaifi.goatcounter.com';
