@@ -1,4 +1,4 @@
-const CACHE = 'azkar-v11';
+const CACHE = 'azkar-v12';
 const FILES = ["./", "index.html", "manifest.webmanifest", "amiri.woff", "ruqaa.woff", "messiri.woff", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"];
 // install: always download fresh copies (never from the browser's short-term cache)
 self.addEventListener('install', e => {

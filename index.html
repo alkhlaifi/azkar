@@ -121,6 +121,7 @@ body.e .pick button.on{color:#14233a}
 .panel p,.panel li{font-size:14px;line-height:1.9}
 .panel ol{padding-right:20px}
 .panel .close{display:block;margin:16px auto 0;background:#1f5f5b;color:#fff;border-radius:30px;padding:9px 30px;font-weight:700}
+.warnnote{margin-top:10px;background:#fff4dc;border:1px solid #e8c983;border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.8;color:#5a4520}
 .fsrow{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0}
 .fsrow button{width:44px;height:44px;border-radius:50%;background:#f1e6cf;font-weight:700;font-size:18px}
 .toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 150px);transform:translateX(-50%);background:rgba(20,30,25,.92);color:#fff;padding:8px 18px;border-radius:30px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:30}
@@ -190,12 +191,17 @@ body.e .pick button.on{color:#14233a}
 
 <!-- SHEETS -->
 <div class="sheet" id="installSheet"><div class="panel">
- <h3>ثبّت التطبيق على جوالك</h3>
+ <h3>أضف الأذكار إلى شاشتك</h3>
+ <div id="isA">
+ <h4>أندرويد (Google Chrome)</h4>
+ <ol><li>افتح هذه الصفحة في متصفح <b>Google Chrome</b>.</li><li>اضغط القائمة <b>⋮</b> أعلى المتصفح.</li><li>اختر <b>«إضافة إلى الشاشة الرئيسية»</b>.</li><li>إذا ظهر لك خياران فاختر <b>«إنشاء اختصار»</b> ثم <b>«إضافة»</b>.</li></ol>
+ <div class="warnnote"><b>تنبيه مطمئن:</b> إن اخترت «تثبيت» بدل «إنشاء اختصار» فقد تُظهر بعض أجهزة أندرويد رسالة من Google Play بعنوان «تم حظر تطبيق غير آمن». هذه رسالة خاطئة معروفة تظهر مع تطبيقات الويب؛ فالتطبيق صفحة أذكار لا تطلب أي صلاحيات. لتجنّبها اختر «إنشاء اختصار».</div>
+ </div>
+ <div id="isI">
  <h4>آيفون (Safari)</h4>
  <ol><li>افتح هذه الصفحة في متصفح <b>Safari</b>.</li><li>اضغط زر المشاركة <b>⬆︎</b> أسفل الشاشة.</li><li>اختر <b>«إضافة إلى الشاشة الرئيسية»</b> ثم <b>«إضافة»</b>.</li></ol>
- <h4>أندرويد (Chrome)</h4>
- <ol><li>اضغط القائمة <b>⋮</b> أعلى المتصفح.</li><li>اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</li></ol>
- <p style="margin-top:10px">بعد التثبيت تظهر أيقونة «الأذكار» بين تطبيقاتك، ويعمل دون إنترنت.</p>
+ </div>
+ <p style="margin-top:10px">بعدها تظهر أيقونة «الأذكار» على شاشتك، وتفتح التطبيق مباشرة ويعمل دون إنترنت.</p>
  <button class="close" data-close>حسنًا</button>
 </div></div>
 
@@ -334,9 +340,11 @@ let deferred = null;
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 if (standalone) $('#installBtn').hidden = true;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; });
-$('#installBtn').onclick = async () => {
-  if (deferred){ deferred.prompt(); const r = await deferred.userChoice; deferred = null; if (r.outcome === 'accepted') $('#installBtn').hidden = true; }
-  else $('#installSheet').classList.add('on');
+// always show the guide (shortcut on Android avoids a false Play Protect warning some phones show for installed web apps)
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent), isAndroid = /android/i.test(navigator.userAgent);
+$('#installBtn').onclick = () => {
+  $('#isA').hidden = isIOS; $('#isI').hidden = isAndroid;
+  $('#installSheet').classList.add('on');
 };
 window.addEventListener('appinstalled', () => { $('#installBtn').hidden = true; toast('تم تثبيت التطبيق'); gcEvent('install', 'تثبيت التطبيق'); });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).then(r => r.update()).catch(() => {});
