@@ -367,8 +367,15 @@ function showStat(id, n){
 }
 const cached = store.get('azkar-stats', {});
 showStat('V', cached.V); showStat('I', cached.I);
-const getCount = path => fetch(GC + '/counter/' + encodeURIComponent(path) + '.json', {cache: 'no-store'})
-  .then(r => r.ok ? r.json() : null).then(j => j && j.count !== undefined ? parseInt(String(j.count).replace(/[^0-9]/g, ''), 10) : 0).catch(() => 0);
+// GoatCounter caches counter answers for up to 4 hours; asking with a 10-minute time stamp gets a fresh number,
+// and if that request is refused we fall back to the plain (cached) address
+const parseCount = r => r && r.ok ? r.json().then(j => j && j.count !== undefined ? parseInt(String(j.count).replace(/[^0-9]/g, ''), 10) : 0) : 0;
+const getCount = path => {
+  const url = GC + '/counter/' + encodeURIComponent(path) + '.json';
+  const bucket = Math.floor(Date.now() / 600000);
+  return fetch(url + '?t=' + bucket, {cache: 'no-store'}).then(parseCount).catch(() => 0)
+    .then(n => n || fetch(url, {cache: 'no-store'}).then(parseCount).catch(() => 0));
+};
 Promise.all([getCount(PV).then(n => n || getCount(PV + '/')), getCount(PI)]).then(([v, i]) => {
   v = Math.max(v, i);
   const c = {V: v || cached.V || 0, I: i || cached.I || 0};
